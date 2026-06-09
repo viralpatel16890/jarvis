@@ -1,0 +1,120 @@
+<div class="panel-overlay" (click)="close()"></div>
+<div class="panel">
+  <div class="panel__header">
+    <span class="panel__title">SYSTEM CONFIGURATION</span>
+    <button type="button" class="btn-icon" (click)="close()">✕</button>
+  </div>
+
+  <div class="panel__body">
+    <!-- Ollama Status -->
+    <div class="section">
+      <div class="section__title">OLLAMA STATUS</div>
+      <div class="status-row">
+        <span class="dot" [class]="'dot--' + ollamaStatus"></span>
+        <span class="status-text">{{ ollamaStatus | uppercase }}</span>
+        <button type="button" class="btn-sm" (click)="checkOllama()">REFRESH</button>
+      </div>
+      @if (ollamaStatus === 'offline') {
+        <div class="hint">Start Ollama: <code>OLLAMA_ORIGINS=* ollama serve</code></div>
+      }
+    </div>
+
+    <!-- Backend -->
+    <div class="section">
+      <div class="section__title">AI BACKEND</div>
+      <div class="toggle-group">
+        <button type="button" class="toggle-btn" [class.active]="settings.backend === 'ollama'"
+          (click)="settings.backend = 'ollama'">OLLAMA (LOCAL)</button>
+        <button type="button" class="toggle-btn" [class.active]="settings.backend === 'claude'"
+          (click)="settings.backend = 'claude'">CLAUDE API</button>
+      </div>
+    </div>
+
+    <!-- Ollama Models -->
+    @if (settings.backend === 'ollama') {
+      <div class="section">
+        <div class="section__title">MAIN MODEL</div>
+        @if (availableModels.length > 0) {
+          <select class="select" aria-label="Main model" [(ngModel)]="settings.ollamaModel">
+            <optgroup label="☁ Cloud (no GPU needed)">
+              @for (m of availableModels | modelFilter:'cloud'; track m) {
+                <option [value]="m">{{ m }}</option>
+              }
+            </optgroup>
+            <optgroup label="💻 Local">
+              @for (m of availableModels | modelFilter:'local'; track m) {
+                <option [value]="m">{{ m }}</option>
+              }
+            </optgroup>
+          </select>
+        } @else {
+          <input class="input" [(ngModel)]="settings.ollamaModel" placeholder="e.g. gpt-oss:20b-cloud" />
+        }
+
+        <div class="section__title section__title--spaced">ROUTER MODEL (TINY — intent classification only)</div>
+        @if (availableModels.length > 0) {
+          <select class="select" aria-label="Router model" [(ngModel)]="settings.routerModel">
+            <optgroup label="💻 Local (recommended — fast)">
+              @for (m of availableModels | modelFilter:'local'; track m) {
+                <option [value]="m">{{ m }}</option>
+              }
+            </optgroup>
+            <optgroup label="☁ Cloud">
+              @for (m of availableModels | modelFilter:'cloud'; track m) {
+                <option [value]="m">{{ m }}</option>
+              }
+            </optgroup>
+          </select>
+        } @else {
+          <input class="input" [(ngModel)]="settings.routerModel" placeholder="e.g. llama3.2:latest" />
+        }
+        <div class="hint">Router classifies intent in ~50 tokens. Use a local model here to avoid cloud latency.</div>
+      </div>
+    }
+
+    <!-- Claude Settings -->
+    @if (settings.backend === 'claude') {
+      <div class="section">
+        <div class="section__title">CLAUDE MODEL</div>
+        <select class="select" aria-label="Claude model" [(ngModel)]="settings.claudeModel">
+          <option value="claude-sonnet-4-6">claude-sonnet-4-6</option>
+          <option value="claude-haiku-4-5-20251001">claude-haiku-4-5 (faster)</option>
+          <option value="claude-opus-4-8">claude-opus-4-8 (most capable)</option>
+        </select>
+        <div class="section__title section__title--spaced">API KEY</div>
+        <input class="input" type="password" [(ngModel)]="settings.claudeApiKey"
+          placeholder="sk-ant-..." />
+        <div class="hint">Proxied through local dev server — key stays local</div>
+      </div>
+    }
+
+    <!-- Voice -->
+    <div class="section">
+      <div class="section__title">VOICE</div>
+      <label class="checkbox-row">
+        <input type="checkbox" [(ngModel)]="settings.voiceEnabled" />
+        <span>Enable voice output (text-to-speech)</span>
+      </label>
+      <label class="checkbox-row">
+        <input type="checkbox" [(ngModel)]="settings.wakeWordEnabled" />
+        <span>Wake word detection ("Hey Jarvis")</span>
+      </label>
+    </div>
+
+    <!-- User -->
+    <div class="section">
+      <div class="section__title">YOUR NAME (HOW JARVIS ADDRESSES YOU)</div>
+      <input class="input" [(ngModel)]="settings.userName" placeholder="sir" />
+    </div>
+
+    <!-- Memory -->
+    <div class="section">
+      <div class="section__title">MEMORY</div>
+      <button type="button" class="btn-danger" (click)="clearMemory()">CLEAR CONVERSATION HISTORY</button>
+    </div>
+  </div>
+
+  <div class="panel__footer">
+    <button type="button" class="btn-save" (click)="save()">{{ saved ? '✓ SAVED' : 'SAVE SETTINGS' }}</button>
+  </div>
+</div>

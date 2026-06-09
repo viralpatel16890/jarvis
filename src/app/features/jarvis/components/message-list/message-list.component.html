@@ -1,0 +1,34 @@
+<div class="message-list">
+  @for (msg of messages; track trackById($index, msg)) {
+    <div class="message" [class]="'message--' + msg.role" [class.message--streaming]="msg.status === 'streaming'">
+      @if (msg.role === 'assistant') {
+        <div class="message__avatar">
+          <span class="avatar-j">J</span>
+        </div>
+      }
+      <div class="message__bubble">
+        @if (msg.role === 'tool') {
+          <div class="tool-result">
+            <span class="tool-result__icon">⚙</span>
+            <span class="tool-result__name">{{ msg.toolName }}</span>
+            <span class="tool-result__content">{{ msg.content }}</span>
+          </div>
+        } @else if (msg.role === 'assistant') {
+          <div class="message__content markdown" [innerHTML]="renderMarkdown(msg.content)"></div>
+          @if (msg.status === 'streaming') {
+            <span class="cursor-blink">▌</span>
+          }
+        } @else {
+          <div class="message__content">{{ msg.content }}</div>
+        }
+        <div class="message__time">{{ msg.timestamp | date:'HH:mm:ss' }}</div>
+      </div>
+      @if (msg.role === 'user') {
+        <div class="message__avatar message__avatar--user">
+          <span>YOU</span>
+        </div>
+      }
+    </div>
+  }
+  <div #scrollAnchor></div>
+</div>

@@ -1,0 +1,15 @@
+{
+  "/ollama": {
+    "target": "http://localhost:11434",
+    "secure": false,
+    "changeOrigin": true,
+    "pathRewrite": { "^/ollama": "" },
+    "logLevel": "warn"
+  },
+  "/anthropic": {
+    "target": "https://api.anthropic.com",
+    "secure": true,
+    "changeOrigin": true,
+    "pathRewrite": { "^/anthropic": "" }
+  }
+}
