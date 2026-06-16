@@ -12,7 +12,7 @@
       <span class="status-dot" [class.active]="!isProcessing()"></span>
       <span class="status-label">{{ statusText() }}</span>
       @if (isProcessing()) {
-        <span class="agent-badge" [class]="'agent-badge--' + activeAgent()">
+        <span [class]="'agent-badge agent-badge--' + activeAgent()">
           {{ activeAgent() === 'hermes' ? '☤ HERMES' : activeAgent() === 'pipeline' ? '⟳ PIPELINE' : '◈ JARVIS' }}
         </span>
       }
@@ -155,7 +155,7 @@
           </div>
           <div class="pipeline-hud__steps">
             @for (step of planSteps(); track step.id) {
-              <div class="hud-step" [class]="'hud-step--' + step.status">
+              <div [class]="'hud-step hud-step--' + step.status">
                 <span class="hud-step__icon">{{ step.status === 'done' ? '✓' : step.status === 'running' ? '⟳' : step.status === 'error' ? '✗' : '○' }}</span>
                 <span class="hud-step__desc">{{ step.description }}</span>
                 @if (step.tool && step.tool !== 'none') {

@@ -1,6 +1,6 @@
 <div class="message-list">
   @for (msg of messages; track trackById($index, msg)) {
-    <div class="message" [class]="'message--' + msg.role" [class.message--streaming]="msg.status === 'streaming'">
+    <div [class]="'message message--' + msg.role" [class.message--streaming]="msg.status === 'streaming'">
       @if (msg.role === 'assistant') {
         <div class="message__avatar">
           <span class="avatar-j">J</span>

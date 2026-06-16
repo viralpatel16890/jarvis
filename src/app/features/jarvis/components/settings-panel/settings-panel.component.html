@@ -14,7 +14,7 @@
     <div class="section">
       <div class="section__title">OLLAMA STATUS</div>
       <div class="status-row">
-        <span class="dot" [class]="'dot--' + ollamaStatus"></span>
+        <span [class]="'dot dot--' + ollamaStatus"></span>
         <span class="status-text">{{ ollamaStatus | uppercase }}</span>
         <button type="button" class="btn-sm" (click)="checkOllama()">REFRESH</button>
       </div>
@@ -106,9 +106,9 @@
         <span>Auto-detect complex tasks (multi-agent pipeline)</span>
       </label>
       <div class="hermes-status-row">
-        <span class="dot" [class]="'dot--' + hermesBridgeStatus"></span>
+        <span [class]="'dot dot--' + hermesBridgeStatus"></span>
         <span class="status-text">Bridge: {{ hermesBridgeStatus | uppercase }}</span>
-        <span class="dot dot--small" [class]="hermesCliStatus === 'installed' ? 'dot--online' : 'dot--offline'"></span>
+        <span [class]="'dot dot--small ' + (hermesCliStatus === 'installed' ? 'dot--online' : 'dot--offline')"></span>
         <span class="status-text">CLI: {{ hermesCliStatus | uppercase }}</span>
         <button type="button" class="btn-sm" (click)="checkHermes()">REFRESH</button>
       </div>
