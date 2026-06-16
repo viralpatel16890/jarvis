@@ -31,17 +31,27 @@ export class VoiceService implements OnDestroy {
   private initVoices(): void {
     const load = () => {
       this.voices = this.synth.getVoices();
-      this.preferredVoice =
-        this.voices.find(v =>
-          v.name.includes('Daniel') ||
-          v.name.includes('Google UK English Male') ||
-          (v.lang === 'en-GB' && v.name.toLowerCase().includes('male'))
-        ) ??
-        this.voices.find(v => v.lang.startsWith('en')) ??
-        null;
+      this.preferredVoice = this.pickJarvisVoice();
     };
     load();
     this.synth.onvoiceschanged = load;
+  }
+
+  // Priority: Microsoft Natural UK male → Daniel (macOS) → Google UK Male → any en-GB → any en
+  private pickJarvisVoice(): SpeechSynthesisVoice | null {
+    const v = this.voices;
+    return (
+      v.find(x => /Microsoft Ryan Online/i.test(x.name))    ||
+      v.find(x => /Microsoft Alfie Online/i.test(x.name))   ||
+      v.find(x => /Microsoft Ollie Online/i.test(x.name))   ||
+      v.find(x => /Microsoft Thomas Online/i.test(x.name))  ||
+      v.find(x => /Microsoft George/i.test(x.name))         ||
+      v.find(x => x.name === 'Daniel')                       ||
+      v.find(x => /Google UK English Male/i.test(x.name))   ||
+      v.find(x => x.lang === 'en-GB')                        ||
+      v.find(x => x.lang.startsWith('en'))                   ||
+      null
+    );
   }
 
   startListening(onResult: (text: string) => void, wakeWordMode = false): void {
@@ -109,14 +119,20 @@ export class VoiceService implements OnDestroy {
 
     const clean = text
       .replace(/```[\s\S]*?```/g, 'code block omitted')
-      .replace(/[*_`#]/g, '')
-      .replace(/\n+/g, '. ')
-      .slice(0, 600);
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')          // [label](url) → label
+      .replace(/https?:\/\/\S+/g, 'link')               // bare URLs → "link"
+      .replace(/[*_`#>]/g, '')
+      .replace(/&[a-z]+;/g, '')                         // HTML entities
+      .replace(/\n{2,}/g, '. ')
+      .replace(/\n/g, ', ')
+      .replace(/\s{2,}/g, ' ')
+      .trim()
+      .slice(0, 900);
 
     const utterance = new SpeechSynthesisUtterance(clean);
     utterance.voice = this.preferredVoice;
-    utterance.rate = 1.0;
-    utterance.pitch = 0.9;
+    utterance.rate = 0.88;   // measured, deliberate — JARVIS never rushes
+    utterance.pitch = 0.85;  // deeper, authoritative British tone
     utterance.volume = 1;
 
     utterance.onstart = () => this.zone.run(() => this.isSpeaking$.next(true));
