@@ -52,6 +52,11 @@ export class SettingsPanelComponent implements OnInit {
   }
 
   checkHermes(): void {
+    if (!this.settings.hermesEnabled) {
+      this.hermesBridgeStatus = 'offline';
+      this.hermesCliStatus = 'not installed';
+      return;
+    }
     this.hermesBridgeStatus = 'checking';
     this.hermesCliStatus = 'checking';
     this.hermesSvc.checkHealth().subscribe(h => {

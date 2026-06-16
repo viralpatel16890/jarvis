@@ -82,7 +82,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   voiceEnabled: true,
   wakeWordEnabled: true,
   userName: 'sir',
-  hermesEnabled: true,
+  hermesEnabled: false,
   hermesBaseUrl: '/hermes',
   complexRoutingEnabled: true,
 };
