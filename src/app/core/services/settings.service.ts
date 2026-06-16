@@ -2,7 +2,7 @@ import { Injectable, signal } from '@angular/core';
 import { AppSettings, DEFAULT_SETTINGS } from '../models/message.model';
 
 const STORAGE_KEY = 'jarvis_settings';
-const SETTINGS_VERSION = 2;
+const SETTINGS_VERSION = 3;
 
 @Injectable({ providedIn: 'root' })
 export class SettingsService {

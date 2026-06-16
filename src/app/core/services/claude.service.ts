@@ -28,7 +28,6 @@ export class ClaudeService {
     signal?: AbortSignal
   ): AsyncGenerator<string> {
     const s = this.settings.get();
-    if (!s.claudeApiKey) throw new Error('Claude API key not set in settings.');
 
     const claudeMessages: ClaudeMessage[] = messages
       .filter(m => m.role !== 'system')

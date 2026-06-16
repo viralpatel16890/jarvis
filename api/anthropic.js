@@ -19,10 +19,10 @@ export default async function handler(req) {
     method: req.method,
     headers: {
       'content-type': 'application/json',
-      'x-api-key': req.headers.get('x-api-key') ?? process.env.ANTHROPIC_KEY ?? '',
-      'anthropic-version': req.headers.get('anthropic-version') ?? '2023-06-01',
+      'x-api-key': req.headers.get('x-api-key') || process.env.ANTHROPIC_KEY || '',
+      'anthropic-version': req.headers.get('anthropic-version') || '2023-06-01',
       'anthropic-dangerous-direct-browser-access':
-        req.headers.get('anthropic-dangerous-direct-browser-access') ?? 'true',
+        req.headers.get('anthropic-dangerous-direct-browser-access') || 'true',
       ...(req.headers.get('anthropic-beta')
         ? { 'anthropic-beta': req.headers.get('anthropic-beta') }
         : {}),
