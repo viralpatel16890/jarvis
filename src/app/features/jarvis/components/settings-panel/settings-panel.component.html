@@ -1,8 +1,12 @@
-<div class="panel-overlay" (click)="close()"></div>
-<div class="panel">
+@if (!isDocked) {
+  <div class="panel-overlay" (click)="close()"></div>
+}
+<div class="panel" [class.panel--docked]="isDocked">
   <div class="panel__header">
     <span class="panel__title">SYSTEM CONFIGURATION</span>
-    <button type="button" class="btn-icon" (click)="close()">✕</button>
+    @if (!isDocked) {
+      <button type="button" class="btn-icon" (click)="close()">✕</button>
+    }
   </div>
 
   <div class="panel__body">
@@ -82,11 +86,40 @@
           <option value="claude-opus-4-8">claude-opus-4-8 (most capable)</option>
         </select>
         <div class="section__title section__title--spaced">API KEY</div>
-        <input class="input" type="password" [(ngModel)]="settings.claudeApiKey"
-          placeholder="sk-ant-..." />
+        <form autocomplete="off" (submit)="$event.preventDefault()">
+          <input class="input" type="password" name="claude-api-key" autocomplete="new-password"
+            [(ngModel)]="settings.claudeApiKey" placeholder="sk-ant-..." />
+        </form>
         <div class="hint">Proxied through local dev server — key stays local</div>
       </div>
     }
+
+    <!-- Hermes -->
+    <div class="section section--hermes">
+      <div class="section__title">HERMES AGENT</div>
+      <label class="checkbox-row">
+        <input type="checkbox" [(ngModel)]="settings.hermesEnabled" />
+        <span>Enable Hermes for complex tasks</span>
+      </label>
+      <label class="checkbox-row">
+        <input type="checkbox" [(ngModel)]="settings.complexRoutingEnabled" />
+        <span>Auto-detect complex tasks (multi-agent pipeline)</span>
+      </label>
+      <div class="hermes-status-row">
+        <span class="dot" [class]="'dot--' + hermesBridgeStatus"></span>
+        <span class="status-text">Bridge: {{ hermesBridgeStatus | uppercase }}</span>
+        <span class="dot dot--small" [class]="hermesCliStatus === 'installed' ? 'dot--online' : 'dot--offline'"></span>
+        <span class="status-text">CLI: {{ hermesCliStatus | uppercase }}</span>
+        <button type="button" class="btn-sm" (click)="checkHermes()">REFRESH</button>
+      </div>
+      @if (hermesCliStatus !== 'installed') {
+        <div class="hint">
+          Install Hermes CLI:<br/>
+          <code>curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash</code>
+        </div>
+        <div class="hint">Start bridge: <code>cd bridge && node bridge.js</code></div>
+      }
+    </div>
 
     <!-- Voice -->
     <div class="section">

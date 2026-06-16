@@ -1,8 +1,5 @@
-<div class="jarvis-shell">
-  <!-- HEX GRID BACKGROUND -->
+<div class="jarvis-shell" [class.jarvis-shell--active]="hasMessages()">
   <div class="hex-bg" aria-hidden="true"></div>
-
-  <!-- SCAN LINE -->
   <div class="scanline" aria-hidden="true"></div>
 
   <!-- TOP BAR -->
@@ -14,17 +11,18 @@
     <div class="top-bar__status">
       <span class="status-dot" [class.active]="!isProcessing()"></span>
       <span class="status-label">{{ statusText() }}</span>
+      @if (isProcessing()) {
+        <span class="agent-badge" [class]="'agent-badge--' + activeAgent()">
+          {{ activeAgent() === 'hermes' ? '☤ HERMES' : activeAgent() === 'pipeline' ? '⟳ PIPELINE' : '◈ JARVIS' }}
+        </span>
+      }
     </div>
     <div class="top-bar__actions">
       @if (isSpeaking()) {
-        <button class="btn-action" title="Stop speaking" (click)="stopSpeaking()">
-          ⏹ MUTE
-        </button>
+        <button type="button" class="btn-action" (click)="stopSpeaking()">⏹ MUTE</button>
       }
-      <button class="btn-action" title="Clear chat" (click)="clearChat()">⊘ CLEAR</button>
-      <button class="btn-action btn-action--settings" title="Settings" (click)="showSettings.set(true)">
-        ⚙ CONFIG
-      </button>
+      <button type="button" class="btn-action" (click)="exportChat()" [disabled]="messages().length === 0">⬇ EXPORT</button>
+      <button type="button" class="btn-action" (click)="clearChat()">⊘ CLEAR</button>
     </div>
   </header>
 
@@ -33,42 +31,96 @@
     <div class="offline-banner">
       <span class="offline-banner__icon">⚠</span>
       @if (settings.get().backend === 'ollama') {
-        <span>Ollama is offline. Run: <code>OLLAMA_ORIGINS=* ollama serve</code> then pull a model.</span>
+        <span>Ollama is offline. Run: <code>OLLAMA_ORIGINS=* ollama serve</code></span>
       } @else {
         <span>Claude API key not set. Open ⚙ CONFIG to add your key.</span>
       }
-      <button class="offline-banner__retry" (click)="checkBackend()">RETRY</button>
+      <button type="button" class="offline-banner__retry" (click)="checkBackend()">RETRY</button>
+    </div>
+  }
+
+  <!-- HERMES STATUS BANNER -->
+  @if (settings.get().hermesEnabled && bridgeOnline()) {
+    <div class="hermes-banner" [class.hermes-banner--active]="hermesInstalled()">
+      <span class="hermes-banner__icon">☤</span>
+      @if (hermesInstalled()) {
+        <span>Hermes CLI detected — complex tasks will route through Hermes</span>
+      } @else {
+        <span>Bridge online · Hermes CLI not installed — using built-in multi-agent pipeline</span>
+        <a class="hermes-banner__link" href="https://hermes-agent.nousresearch.com"
+           target="_blank" rel="noopener">Install Hermes ↗</a>
+      }
     </div>
   }
 
   <!-- MAIN LAYOUT -->
-  <main class="main">
+  <main class="main" [class.main--active]="hasMessages()">
 
-    <!-- LEFT PANEL: REACTOR + CONTROLS -->
-    <aside class="side-panel">
-      <app-arc-reactor [state]="state()"></app-arc-reactor>
-
-      <div class="reactor-info">
-        <div class="info-row">
-          <span class="info-label">BACKEND</span>
-          <span class="info-value">{{ settings.get().backend | uppercase }}</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">MODEL</span>
-          <span class="info-value model-name">
-            {{ settings.get().backend === 'ollama' ? settings.get().ollamaModel : settings.get().claudeModel }}
-          </span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">VOICE</span>
-          <span class="info-value" [class.active-val]="settings.get().voiceEnabled">
-            {{ settings.get().voiceEnabled ? 'ON' : 'OFF' }}
-          </span>
-        </div>
+    <!-- REACTOR COLUMN (centered startup → compact sidebar) -->
+    <aside class="reactor-col">
+      <div class="reactor-canvas-wrap">
+        <app-arc-reactor [state]="state()"></app-arc-reactor>
       </div>
 
-      <button class="mic-btn" [class.mic-btn--active]="isListening()"
-        (click)="toggleMic()" [title]="isListening() ? 'Stop listening' : 'Start voice input'">
+      <!-- Audio visualiser (listening or speaking) -->
+      @if (isListening() || isSpeaking()) {
+        <div class="audio-viz" [class.audio-viz--speaking]="isSpeaking()">
+          @for (bar of audioVizBars; track bar) {
+            <div class="audio-viz__bar"></div>
+          }
+        </div>
+      }
+
+      <!-- Startup greeting (hidden once chat is active) -->
+      @if (!hasMessages()) {
+        <div class="reactor-welcome">
+          <div class="reactor-welcome__title">J.A.R.V.I.S</div>
+          <div class="reactor-welcome__sub">Just A Rather Very Intelligent System</div>
+          <div class="reactor-welcome__greeting">
+            Good {{ timeOfDay() }}, {{ settings.get().userName }}.
+          </div>
+        </div>
+      }
+
+      <!-- Info panel (shown only in active sidebar mode) -->
+      @if (hasMessages()) {
+        <div class="reactor-info">
+          <div class="info-row">
+            <span class="info-label">BACKEND</span>
+            <span class="info-value">{{ settings.get().backend | uppercase }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">MODEL</span>
+            <span class="info-value model-name">
+              {{ settings.get().backend === 'ollama' ? settings.get().ollamaModel : settings.get().claudeModel }}
+            </span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">HERMES</span>
+            <span class="info-value"
+              [class.active-val]="hermesInstalled()"
+              [class.warn-val]="bridgeOnline() && !hermesInstalled()">
+              {{ hermesInstalled() ? 'CLI ✓' : bridgeOnline() ? 'BRIDGE' : 'OFF' }}
+            </span>
+          </div>
+          @if (usage.usage().totalTokens > 0) {
+            <div class="info-row info-row--divider">
+              <span class="info-label">TOKENS ↑↓</span>
+              <span class="info-value token-val">{{ usage.usage().totalTokens | number }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">IN / OUT</span>
+              <span class="info-value token-val--sm">
+                {{ usage.usage().promptTokens | number }} / {{ usage.usage().completionTokens | number }}
+              </span>
+            </div>
+          }
+        </div>
+      }
+
+      <!-- Mic button -->
+      <button type="button" class="mic-btn" [class.mic-btn--active]="isListening()"
+        (click)="toggleMic()" [attr.aria-label]="isListening() ? 'Stop listening' : 'Start voice input'">
         <span class="mic-icon">{{ isListening() ? '🔴' : '🎙' }}</span>
         <span class="mic-label">{{ isListening() ? 'LISTENING' : 'VOICE INPUT' }}</span>
       </button>
@@ -77,17 +129,43 @@
       <div class="corner-deco corner-deco--br" aria-hidden="true"></div>
     </aside>
 
-    <!-- CENTER: CHAT -->
-    <section class="chat-area">
+    <!-- CHAT AREA (slides in when messages exist) -->
+    <section class="chat-area" [class.chat-area--visible]="hasMessages()">
       <div class="chat-area__messages">
-        @if (messages().length === 0) {
+        @if (messages().length === 0 && !isProcessing()) {
           <div class="empty-state">
-            <div class="empty-state__text">JARVIS ONLINE</div>
             <div class="empty-state__sub">How may I assist you today, {{ settings.get().userName }}?</div>
           </div>
         }
         <app-message-list [messages]="messages()"></app-message-list>
       </div>
+
+      <!-- PIPELINE HUD -->
+      @if (isProcessing() && planSteps().length > 0) {
+        <div class="pipeline-hud">
+          <div class="pipeline-hud__header">
+            <span class="pipeline-hud__label">⟳ MULTI-AGENT PIPELINE</span>
+            <span class="pipeline-hud__counter">{{ planProgress().done }}/{{ planProgress().total }}</span>
+            <button type="button" class="pipeline-hud__cancel" (click)="cancelRun()">✕ CANCEL</button>
+          </div>
+          <div class="pipeline-hud__progress-track">
+            <div class="pipeline-hud__progress-fill"
+                 [style.width.%]="planProgress().total ? (planProgress().done / planProgress().total * 100) : 0">
+            </div>
+          </div>
+          <div class="pipeline-hud__steps">
+            @for (step of planSteps(); track step.id) {
+              <div class="hud-step" [class]="'hud-step--' + step.status">
+                <span class="hud-step__icon">{{ step.status === 'done' ? '✓' : step.status === 'running' ? '⟳' : step.status === 'error' ? '✗' : '○' }}</span>
+                <span class="hud-step__desc">{{ step.description }}</span>
+                @if (step.tool && step.tool !== 'none') {
+                  <span class="hud-step__tool">{{ step.tool }}</span>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      }
 
       <!-- INPUT BAR -->
       <div class="input-bar">
@@ -100,17 +178,49 @@
           rows="1"
           [disabled]="isProcessing()">
         </textarea>
-        <button class="send-btn" (click)="send()" [disabled]="isProcessing() || !inputText().trim()">
+        <button type="button" class="send-btn" (click)="send()"
+          [disabled]="isProcessing() || !inputText().trim()"
+          aria-label="Send message">
           <span>{{ isProcessing() ? '⟳' : '▶' }}</span>
         </button>
       </div>
-      <div class="input-hint">Enter to send · Shift+Enter for new line · "Hey Jarvis" to activate voice</div>
+      <div class="input-hint">
+        Enter to send · Shift+Enter new line · "Hey Jarvis" for voice ·
+        Complex tasks → {{ hermesInstalled() ? 'Hermes' : 'multi-agent pipeline' }}
+      </div>
     </section>
 
+    <!-- DOCKED SETTINGS (active mode) -->
+    @if (hasMessages() && showSettings()) {
+      <app-settings-panel [isDocked]="true" (closed)="showSettings.set(false)"></app-settings-panel>
+    }
+
+    <!-- STARTUP INPUT (centered, only in startup mode) -->
+    @if (!hasMessages()) {
+      <div class="startup-input">
+        <div class="input-bar input-bar--startup">
+          <div class="input-bar__prefix">›</div>
+          <textarea class="input-bar__field"
+            [value]="inputText()"
+            (input)="onInput($event)"
+            (keydown)="onKeyDown($event)"
+            placeholder="How may I assist you today, {{ settings.get().userName }}?"
+            rows="1">
+          </textarea>
+          <button type="button" class="send-btn" (click)="send()"
+            [disabled]="!inputText().trim()" aria-label="Send message">
+            <span>▶</span>
+          </button>
+        </div>
+        <div class="input-hint input-hint--startup">
+          Enter to send · Say "Hey Jarvis" for voice input
+        </div>
+      </div>
+    }
   </main>
 
-  <!-- SETTINGS PANEL -->
-  @if (showSettings()) {
+  <!-- OVERLAY SETTINGS (startup mode only) -->
+  @if (!hasMessages() && showSettings()) {
     <app-settings-panel (closed)="showSettings.set(false)"></app-settings-panel>
   }
 </div>

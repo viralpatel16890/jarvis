@@ -1,23 +1,24 @@
 import { Injectable } from '@angular/core';
 import { Intent } from './router.agent';
-import { getTimeTool } from '../tools/time.tool';
-import { getWeatherTool } from '../tools/weather.tool';
-import { searchTool, openUrlTool } from '../tools/search.tool';
+import { SkillRegistryService } from '../services/skill-registry.service';
 
 @Injectable({ providedIn: 'root' })
 export class ToolAgent {
+  constructor(private registry: SkillRegistryService) {}
+
   async execute(intent: Intent, param?: string): Promise<string | null> {
-    switch (intent) {
-      case 'TIME':
-        return getTimeTool();
-      case 'WEATHER':
-        return await getWeatherTool(param);
-      case 'SEARCH':
-        return await searchTool(param ?? '');
-      case 'OPEN':
-        return openUrlTool(param ?? '');
-      default:
-        return null;
-    }
+    const toolName = intent.toLowerCase();
+
+    // Map legacy intents to registry tools
+    let args: any = {};
+    if (toolName === 'weather')  args = { location: param };
+    if (toolName === 'search')   args = { query: param };
+    if (toolName === 'open_url') args = { url: param };
+    if (toolName === 'time')     args = {};
+
+    const tool = this.registry.getTool(toolName);
+    if (!tool) return null;
+
+    return await this.registry.execute(toolName, args);
   }
 }
