@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { OllamaMessage } from '../models/message.model';
 import { SettingsService } from './settings.service';
+import { UsageService } from './usage.service';
 
 interface ClaudeMessage {
   role: 'user' | 'assistant';
@@ -11,15 +12,20 @@ interface ClaudeStreamEvent {
   type: string;
   delta?: { type: string; text: string };
   message?: { usage: { input_tokens: number; output_tokens: number } };
+  usage?: { input_tokens: number; output_tokens: number };
 }
 
 @Injectable({ providedIn: 'root' })
 export class ClaudeService {
-  constructor(private settings: SettingsService) {}
+  constructor(
+    private settings: SettingsService,
+    private usage: UsageService
+  ) {}
 
   async *streamChat(
     messages: OllamaMessage[],
-    systemPrompt: string
+    systemPrompt: string,
+    signal?: AbortSignal
   ): AsyncGenerator<string> {
     const s = this.settings.get();
     if (!s.claudeApiKey) throw new Error('Claude API key not set in settings.');
@@ -43,6 +49,7 @@ export class ClaudeService {
         messages: claudeMessages,
         stream: true,
       }),
+      signal,
     });
 
     if (!response.ok) {
@@ -55,6 +62,8 @@ export class ClaudeService {
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     let buffer = '';
+    let inputTokens = 0;
+    let outputTokens = 0;
 
     while (true) {
       const { done, value } = await reader.read();
@@ -67,14 +76,30 @@ export class ClaudeService {
       for (const line of lines) {
         if (!line.startsWith('data: ')) continue;
         const data = line.slice(6).trim();
-        if (data === '[DONE]') return;
+        if (data === '[DONE]') {
+          if (inputTokens || outputTokens) {
+            this.usage.record(inputTokens, outputTokens, s.claudeModel);
+          }
+          return;
+        }
         try {
           const event: ClaudeStreamEvent = JSON.parse(data);
           if (event.type === 'content_block_delta' && event.delta?.text) {
             yield event.delta.text;
           }
+          // Capture token usage from message_start or message_delta events
+          if (event.type === 'message_start' && event.message?.usage) {
+            inputTokens = event.message.usage.input_tokens;
+          }
+          if (event.type === 'message_delta' && event.usage) {
+            outputTokens = event.usage.output_tokens;
+          }
         } catch {}
       }
+    }
+
+    if (inputTokens || outputTokens) {
+      this.usage.record(inputTokens, outputTokens, s.claudeModel);
     }
   }
 }
