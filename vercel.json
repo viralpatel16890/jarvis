@@ -1,0 +1,9 @@
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist/jarvis/browser",
+  "rewrites": [
+    { "source": "/anthropic/:path*", "destination": "/api/anthropic" },
+    { "source": "/ollama/:path*",    "destination": "/api/ollama" },
+    { "source": "/((?!api/).*)",     "destination": "/index.html" }
+  ]
+}
