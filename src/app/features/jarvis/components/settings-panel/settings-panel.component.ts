@@ -35,7 +35,8 @@ export class SettingsPanelComponent implements OnInit {
 
   ngOnInit(): void {
     this.settings = { ...this.settingsService.get() };
-    this.checkOllama();
+    if (this.settings.backend === 'ollama') this.checkOllama();
+    else this.ollamaStatus = 'offline';
     this.checkHermes();
   }
 

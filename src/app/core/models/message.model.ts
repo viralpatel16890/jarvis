@@ -73,7 +73,7 @@ You are running as a local AI system on the user's machine.`;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
-  backend: 'ollama',
+  backend: 'claude',
   ollamaBaseUrl: '/ollama',
   ollamaModel: 'gpt-oss:20b-cloud',
   routerModel: 'llama3.2:latest',
