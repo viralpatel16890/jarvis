@@ -80,7 +80,8 @@ export class OllamaService {
   async *streamChat(
     messages: OllamaMessage[],
     model: string,
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    options: Record<string, unknown> = { num_predict: 2048, temperature: 0.7 }
   ): AsyncGenerator<string> {
     if (this.isCircuitOpen()) throw new Error('OllamaCircuitOpen');
 
@@ -89,7 +90,7 @@ export class OllamaService {
       response = await fetch(`${this.base}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model, messages, stream: true }),
+        body: JSON.stringify({ model, messages, stream: true, options }),
         signal: this.makeTimeoutSignal(signal),
       });
     } catch (err) {
@@ -137,7 +138,8 @@ export class OllamaService {
   async chatOnce(
     messages: OllamaMessage[],
     model: string,
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    options: Record<string, unknown> = { num_predict: 8, temperature: 0, top_k: 1 }
   ): Promise<string> {
     if (this.isCircuitOpen()) throw new Error('OllamaCircuitOpen');
 
@@ -146,7 +148,7 @@ export class OllamaService {
       response = await fetch(`${this.base}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model, messages, stream: false }),
+        body: JSON.stringify({ model, messages, stream: false, options }),
         signal: this.makeTimeoutSignal(signal),
       });
     } catch (err) {
