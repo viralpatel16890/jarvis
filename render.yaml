@@ -1,0 +1,21 @@
+# Render Blueprint — deploy with "New → Blueprint" and point at this repo.
+# Runs the Express server (server.js), which serves the Angular build and
+# proxies /anthropic and /ollama so API keys stay server-side.
+services:
+  - type: web
+    name: jarvis
+    runtime: node
+    plan: free # spins down after ~15 min idle; upgrade to "starter" for always-on
+    buildCommand: npm ci && npm run build
+    startCommand: node server.js
+    healthCheckPath: /hermes/health
+    envVars:
+      # Angular CLI 22 requires Node >= 22.22.3 or >= 24.15.0
+      - key: NODE_VERSION
+        value: 24.15.0
+      # Claude API key — set in the Render dashboard, never committed
+      - key: ANTHROPIC_KEY
+        sync: false
+      # Optional cloud Ollama endpoint (leave unset to use Claude only)
+      - key: OLLAMA_URL
+        sync: false

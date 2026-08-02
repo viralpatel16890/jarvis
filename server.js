@@ -80,7 +80,14 @@ function makeProxy(targetBase) {
 }
 
 // ── Claude API proxy (/anthropic/*) ──────────────────────────
-app.use('/anthropic', makeProxy('https://api.anthropic.com'));
+// Inject the server-side key when the client didn't send one, so
+// ANTHROPIC_KEY works the same here as in the Vercel Edge Function.
+app.use('/anthropic', (req, _res, next) => {
+  if (!req.headers['x-api-key'] && process.env.ANTHROPIC_KEY) {
+    req.headers['x-api-key'] = process.env.ANTHROPIC_KEY;
+  }
+  next();
+}, makeProxy('https://api.anthropic.com'));
 
 // ── Ollama proxy (/ollama/*) ─────────────────────────────────
 const OLLAMA_URL = process.env.OLLAMA_URL || '';
