@@ -1,3 +1,17 @@
+// This component's host tag (<app-message-list>) is itself a column-direction
+// flex child of .chat-area__messages in jarvis.component.scss. Column-flex
+// children don't stretch to fill height by default (only cross-axis/width
+// does) — without an explicit flex-basis the host sizes to its content
+// instead of the space available, so .message-list below never gets a real
+// bounded height to scroll within, and overflow-y: auto has nothing to do.
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0; // let the child shrink below content size instead of growing past the container
+  overflow: hidden;
+}
+
 .message-list {
   display: flex;
   flex-direction: column;
@@ -5,6 +19,7 @@
   padding: 16px 8px;
   overflow-y: auto;
   flex: 1;
+  min-height: 0;
   scrollbar-width: thin;
   scrollbar-color: rgba(0, 212, 255, 0.3) transparent;
 }
