@@ -40,7 +40,9 @@ if (!DIST_DIR) {
   process.exit(1);
 }
 
-app.use(express.json({ limit: '8mb' }));
+// Note: no express.json() here — /anthropic and /ollama forward the raw
+// request stream via req.pipe(proxyReq), and a body-parsing middleware
+// would drain that stream first, leaving nothing to pipe upstream.
 
 // ── Generic HTTP/HTTPS proxy helper ──────────────────────────
 function makeProxy(targetBase) {
