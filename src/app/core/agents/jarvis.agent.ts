@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { OllamaService } from '../services/ollama.service';
 import { ClaudeService } from '../services/claude.service';
+import { OpenAiService } from '../services/openai.service';
 import { SettingsService } from '../services/settings.service';
 import { ProfileService } from '../services/profile.service';
 import { FactExtractionService } from '../services/fact-extraction.service';
@@ -11,6 +12,7 @@ export class JarvisAgent {
   constructor(
     private ollama: OllamaService,
     private claude: ClaudeService,
+    private openai: OpenAiService,
     private settings: SettingsService,
     private profile: ProfileService,
     private factExtraction: FactExtractionService
@@ -39,6 +41,11 @@ export class JarvisAgent {
 
     if (s.backend === 'claude') {
       for await (const token of this.claude.streamChat(messages, systemPrompt, signal)) {
+        fullResponse += token;
+        yield token;
+      }
+    } else if (s.backend === 'openai') {
+      for await (const token of this.openai.streamChat(messages, systemPrompt, signal)) {
         fullResponse += token;
         yield token;
       }

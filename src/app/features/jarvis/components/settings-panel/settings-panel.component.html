@@ -35,6 +35,8 @@
           (click)="settings.backend = 'ollama'">OLLAMA (LOCAL)</button>
         <button type="button" class="toggle-btn" [class.active]="settings.backend === 'claude'"
           (click)="settings.backend = 'claude'">CLAUDE API</button>
+        <button type="button" class="toggle-btn" [class.active]="settings.backend === 'openai'"
+          (click)="settings.backend = 'openai'">FREE API</button>
       </div>
     </div>
 
@@ -93,6 +95,29 @@
         <form autocomplete="off" (submit)="$event.preventDefault()">
           <input class="input" type="password" name="claude-api-key" autocomplete="new-password"
             [(ngModel)]="settings.claudeApiKey" placeholder="sk-ant-..." />
+        </form>
+        <div class="hint">Proxied through local dev server — key stays local</div>
+      </div>
+    }
+
+    <!-- Free / OpenAI-compatible Settings -->
+    @if (settings.backend === 'openai') {
+      <div class="section">
+        <div class="section__title">PROVIDER</div>
+        <select class="select" aria-label="OpenAI-compatible provider" [(ngModel)]="settings.openaiProvider">
+          <option value="groq">Groq (free, fast)</option>
+          <option value="gemini">Google Gemini (free tier)</option>
+          <option value="openrouter">OpenRouter (free models)</option>
+          <option value="openai">OpenAI (paid)</option>
+        </select>
+
+        <div class="section__title section__title--spaced">MODEL</div>
+        <input class="input" [(ngModel)]="settings.openaiModel" placeholder="e.g. llama-3.3-70b-versatile" />
+
+        <div class="section__title section__title--spaced">API KEY</div>
+        <form autocomplete="off" (submit)="$event.preventDefault()">
+          <input class="input" type="password" name="openai-api-key" autocomplete="new-password"
+            [(ngModel)]="settings.openaiApiKey" placeholder="paste your key..." />
         </form>
         <div class="hint">Proxied through local dev server — key stays local</div>
       </div>

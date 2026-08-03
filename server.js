@@ -100,6 +100,43 @@ app.use('/anthropic', (req, _res, next) => {
   next();
 }, makeProxy('https://api.anthropic.com'));
 
+// ── OpenAI-compatible proxy (/openai/*) ───────────────────────
+// Allow-listed providers only — the client selects one via x-provider,
+// never a client-supplied URL, so this can't become an open SSRF proxy.
+const OPENAI_COMPAT_PROVIDERS = {
+  groq:       'https://api.groq.com/openai/v1',
+  gemini:     'https://generativelanguage.googleapis.com/v1beta/openai',
+  openrouter: 'https://openrouter.ai/api/v1',
+  openai:     'https://api.openai.com/v1',
+};
+
+app.use('/openai', (req, res) => {
+  const base = OPENAI_COMPAT_PROVIDERS[req.headers['x-provider']];
+  if (!base) {
+    return res.status(400).json({
+      error: `Unknown or missing provider. Use one of: ${Object.keys(OPENAI_COMPAT_PROVIDERS).join(', ')}`,
+    });
+  }
+
+  const targetUrl = new URL(base);
+  const proxyPath = targetUrl.pathname.replace(/\/$/, '') + req.url;
+  const headers = { host: targetUrl.hostname, 'content-type': 'application/json' };
+  if (req.headers['authorization']) headers['authorization'] = req.headers['authorization'];
+
+  const proxyReq = https.request(
+    { hostname: targetUrl.hostname, port: 443, path: proxyPath, method: req.method, headers },
+    proxyRes => {
+      res.writeHead(proxyRes.statusCode || 200, proxyRes.headers);
+      proxyRes.pipe(res, { end: true });
+    }
+  );
+
+  proxyReq.setTimeout(30000, () => proxyReq.destroy(new Error('Upstream request timed out')));
+  proxyReq.on('error', err => { if (!res.headersSent) res.status(502).json({ error: err.message }); });
+
+  req.pipe(proxyReq, { end: true });
+});
+
 // ── Env validation ───────────────────────────────────────────
 if (process.env.PORT && (!Number.isInteger(Number(process.env.PORT)) || Number(process.env.PORT) <= 0)) {
   console.error('[JARVIS] Invalid PORT env var:', process.env.PORT);
@@ -157,6 +194,7 @@ const server = app.listen(PORT, () => {
   console.log(`[JARVIS] Dist   → ${DIST_DIR}`);
   console.log(`[JARVIS] Ollama → ${OLLAMA_URL || '⚠  not configured (set OLLAMA_URL)'}`);
   console.log(`[JARVIS] Claude → proxied via /anthropic`);
+  console.log(`[JARVIS] OpenAI-compat → proxied via /openai (groq, gemini, openrouter, openai)`);
 });
 
 // ── Graceful shutdown ─────────────────────────────────────────

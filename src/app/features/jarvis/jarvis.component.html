@@ -92,7 +92,9 @@
           <div class="info-row">
             <span class="info-label">MODEL</span>
             <span class="info-value model-name">
-              {{ settings.get().backend === 'ollama' ? settings.get().ollamaModel : settings.get().claudeModel }}
+              {{ settings.get().backend === 'ollama' ? settings.get().ollamaModel
+                 : settings.get().backend === 'openai' ? settings.get().openaiModel
+                 : settings.get().claudeModel }}
             </span>
           </div>
           <div class="info-row">

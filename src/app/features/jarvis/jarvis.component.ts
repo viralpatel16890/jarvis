@@ -138,6 +138,8 @@ export class JarvisComponent implements OnInit, OnDestroy {
   checkBackend(): void {
     if (this.settings.get().backend === 'ollama') {
       this.subs.add(this.ollama.isRunning().subscribe(online => this.backendOnline.set(online)));
+    } else if (this.settings.get().backend === 'openai') {
+      this.backendOnline.set(!!this.settings.get().openaiApiKey);
     } else {
       this.backendOnline.set(!!this.settings.get().claudeApiKey);
     }

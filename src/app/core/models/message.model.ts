@@ -28,13 +28,18 @@ export interface OllamaMessage {
   content: string;
 }
 
+export type OpenAiProvider = 'groq' | 'gemini' | 'openrouter' | 'openai';
+
 export interface AppSettings {
-  backend: 'ollama' | 'claude';
+  backend: 'ollama' | 'claude' | 'openai';
   ollamaBaseUrl: string;
   ollamaModel: string;
   routerModel: string;
   claudeApiKey: string;
   claudeModel: string;
+  openaiProvider: OpenAiProvider;
+  openaiApiKey: string;
+  openaiModel: string;
   voiceEnabled: boolean;
   wakeWordEnabled: boolean;
   userName: string;
@@ -79,6 +84,9 @@ export const DEFAULT_SETTINGS: AppSettings = {
   routerModel: 'llama3.2:latest',
   claudeApiKey: '',
   claudeModel: 'claude-sonnet-4-6',
+  openaiProvider: 'groq',
+  openaiApiKey: '',
+  openaiModel: 'llama-3.3-70b-versatile',
   voiceEnabled: true,
   wakeWordEnabled: true,
   userName: 'sir',
