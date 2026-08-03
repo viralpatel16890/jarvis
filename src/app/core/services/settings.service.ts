@@ -30,10 +30,18 @@ export class SettingsService {
     return this._settings();
   }
 
+  private persistToStorage(key: string, value: string): void {
+    try {
+      localStorage.setItem(key, value);
+    } catch (err) {
+      console.warn('[SettingsService] Failed to persist to localStorage:', err);
+    }
+  }
+
   update(partial: Partial<AppSettings>): void {
     const updated = { ...this._settings(), ...partial };
     this._settings.set(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...updated, _version: SETTINGS_VERSION }));
+    this.persistToStorage(STORAGE_KEY, JSON.stringify({ ...updated, _version: SETTINGS_VERSION }));
   }
 
   reset(): void {

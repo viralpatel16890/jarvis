@@ -5,6 +5,7 @@ import { ClaudeService } from '../services/claude.service';
 import { SettingsService } from '../services/settings.service';
 import { SkillRegistryService } from '../services/skill-registry.service';
 import { ProfileService } from '../services/profile.service';
+import { FactExtractionService } from '../services/fact-extraction.service';
 import { OllamaMessage, PlanStep, JARVIS_PERSONA } from '../models/message.model';
 
 export interface PlanEvent {
@@ -23,7 +24,8 @@ export class HermesAgent {
     private claude: ClaudeService,
     private settings: SettingsService,
     private registry: SkillRegistryService,
-    private profile: ProfileService
+    private profile: ProfileService,
+    private factExtraction: FactExtractionService
   ) {}
 
   private getPlannerPrompt(): string {
@@ -175,7 +177,7 @@ Example: [{"id":"s1","description":"Search for X","tool":"search","args":{"query
     }
 
     // Proactive fact extraction
-    this.extractFacts(userMessage, synthBuffer);
+    this.factExtraction.extract(userMessage, synthBuffer);
 
     for (const step of synthSteps) {
       step.status = 'done';
@@ -192,31 +194,5 @@ Example: [{"id":"s1","description":"Search for X","tool":"search","args":{"query
     } catch (e) {
       return `[Tool error for "${step.description}": ${(e as Error).message}]`;
     }
-  }
-
-  private async extractFacts(userMsg: string, aiMsg: string): Promise<void> {
-    if (!aiMsg || aiMsg.length < 20) return;
-    const s = this.settings.get();
-    const extractionPrompt = `Extract key permanent facts about the user from this exchange.
-Only extract facts about their identity, preferences, ongoing projects, or location.
-Ignore transient states (mood, current time).
-Reply with a JSON array of strings. Each string should be a single standalone fact.
-Example: ["User is a React developer", "User prefers dark mode", "User lives in London"]
-If no new facts found, reply with [].
-
-Exchange:
-User: ${userMsg}
-Assistant: ${aiMsg}`;
-
-    try {
-      const result = await this.ollama.chatOnce(
-        [{ role: 'user', content: extractionPrompt }],
-        s.routerModel
-      );
-      const facts = JSON.parse(result.match(/\[[\s\S]*\]/)?.[0] ?? '[]');
-      if (Array.isArray(facts)) {
-        facts.forEach(f => this.profile.addFact(f));
-      }
-    } catch {}
   }
 }

@@ -27,9 +27,17 @@ export class MemoryService {
     }
   }
 
+  private persistToStorage(key: string, value: string): void {
+    try {
+      localStorage.setItem(key, value);
+    } catch (err) {
+      console.warn('[MemoryService] Failed to persist to localStorage:', err);
+    }
+  }
+
   private save(): void {
     const toStore = this.messages.slice(-MAX_STORED);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(toStore));
+    this.persistToStorage(STORAGE_KEY, JSON.stringify(toStore));
   }
 
   add(message: Message): void {

@@ -43,6 +43,14 @@ export class UsageService {
     }
   }
 
+  private persistToStorage(key: string, value: string): void {
+    try {
+      localStorage.setItem(key, value);
+    } catch (err) {
+      console.warn('[UsageService] Failed to persist to localStorage:', err);
+    }
+  }
+
   record(promptTokens: number, completionTokens: number, model: string): void {
     this.usage.update(prev => ({
       promptTokens:     prev.promptTokens     + promptTokens,
@@ -56,7 +64,7 @@ export class UsageService {
       ...current,
       lastUpdated: current.lastUpdated ? current.lastUpdated.toISOString() : null,
     };
-    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(stored));
+    this.persistToStorage(this.STORAGE_KEY, JSON.stringify(stored));
   }
 
   reset(): void {

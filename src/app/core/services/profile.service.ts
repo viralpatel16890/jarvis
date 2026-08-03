@@ -45,8 +45,16 @@ export class ProfileService {
     this.save(updated);
   }
 
+  private persistToStorage(key: string, value: string): void {
+    try {
+      localStorage.setItem(key, value);
+    } catch (err) {
+      console.warn('[ProfileService] Failed to persist to localStorage:', err);
+    }
+  }
+
   private save(profile: UserProfile): void {
-    localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+    this.persistToStorage(PROFILE_KEY, JSON.stringify(profile));
   }
 
   reset(): void {

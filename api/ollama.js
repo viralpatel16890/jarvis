@@ -1,14 +1,10 @@
+import { corsPreflightResponse, withCors } from './_shared/cors.js';
+
 export const config = { runtime: 'edge' };
 
 export default async function handler(req) {
   if (req.method === 'OPTIONS') {
-    return new Response(null, {
-      headers: {
-        'access-control-allow-origin': '*',
-        'access-control-allow-methods': 'GET, POST, OPTIONS',
-        'access-control-allow-headers': 'content-type',
-      },
-    });
+    return corsPreflightResponse('content-type');
   }
 
   const ollamaUrl = process.env.OLLAMA_URL;
@@ -26,19 +22,40 @@ export default async function handler(req) {
   const path = url.pathname.replace(/^\/ollama/, '') + url.search;
   const base = ollamaUrl.replace(/\/$/, '');
 
-  const response = await fetch(`${base}${path}`, {
-    method: req.method,
-    headers: { 'content-type': 'application/json' },
-    body: ['GET', 'HEAD'].includes(req.method) ? undefined : req.body,
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 25000);
 
-  return new Response(response.body, {
-    status: response.status,
-    statusText: response.statusText,
-    headers: {
-      'content-type': response.headers.get('content-type') ?? 'application/json',
-      'access-control-allow-origin': '*',
-      'cache-control': 'no-store',
-    },
-  });
+  try {
+    const response = await fetch(`${base}${path}`, {
+      method: req.method,
+      headers: { 'content-type': 'application/json' },
+      body: ['GET', 'HEAD'].includes(req.method) ? undefined : req.body,
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    return withCors(
+      new Response(response.body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: {
+          'content-type': response.headers.get('content-type') ?? 'application/json',
+          'cache-control': 'no-store',
+        },
+      })
+    );
+  } catch (error) {
+    clearTimeout(timeoutId);
+    if (error.name === 'AbortError') {
+      return new Response(JSON.stringify({ error: 'Upstream request timed out' }), {
+        status: 504,
+        headers: {
+          'content-type': 'application/json',
+          'access-control-allow-origin': '*',
+        },
+      });
+    }
+    throw error;
+  }
 }
