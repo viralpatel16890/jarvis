@@ -1,6 +1,6 @@
 import {
   Component, Input, OnChanges, ViewChild,
-  ElementRef, AfterViewChecked, SecurityContext
+  ElementRef, AfterViewChecked, SecurityContext, ChangeDetectionStrategy
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DomSanitizer } from '@angular/platform-browser';
@@ -13,6 +13,7 @@ import { Message } from '../../../../core/models/message.model';
   imports: [CommonModule],
   templateUrl: './message-list.component.html',
   styleUrls: ['./message-list.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MessageListComponent implements OnChanges, AfterViewChecked {
   @Input() messages: Message[] = [];

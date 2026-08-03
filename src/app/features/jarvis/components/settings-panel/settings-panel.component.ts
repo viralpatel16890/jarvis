@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, ChangeDetectionStrategy, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SettingsService } from '../../../../core/services/settings.service';
@@ -14,6 +14,7 @@ import { ModelFilterPipe } from '../../../../core/pipes/model-filter.pipe';
   imports: [CommonModule, FormsModule, ModelFilterPipe],
   templateUrl: './settings-panel.component.html',
   styleUrls: ['./settings-panel.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SettingsPanelComponent implements OnInit {
   @Input() isDocked = false;
@@ -25,6 +26,8 @@ export class SettingsPanelComponent implements OnInit {
   hermesBridgeStatus: 'checking' | 'online' | 'offline' = 'checking';
   hermesCliStatus: 'checking' | 'installed' | 'not installed' = 'checking';
   saved = false;
+
+  private cdr = inject(ChangeDetectorRef);
 
   constructor(
     private settingsService: SettingsService,
@@ -44,12 +47,16 @@ export class SettingsPanelComponent implements OnInit {
     this.ollamaStatus = 'checking';
     this.ollama.isRunning().subscribe(running => {
       this.ollamaStatus = running ? 'online' : 'offline';
+      this.cdr.markForCheck();
       if (running) this.loadModels();
     });
   }
 
   loadModels(): void {
-    this.ollama.getModels().subscribe(models => { this.availableModels = models; });
+    this.ollama.getModels().subscribe(models => {
+      this.availableModels = models;
+      this.cdr.markForCheck();
+    });
   }
 
   checkHermes(): void {
@@ -63,6 +70,7 @@ export class SettingsPanelComponent implements OnInit {
     this.hermesSvc.checkHealth().subscribe(h => {
       this.hermesBridgeStatus = h.ok ? 'online' : 'offline';
       this.hermesCliStatus    = h.hermesInstalled ? 'installed' : 'not installed';
+      this.cdr.markForCheck();
     });
   }
 

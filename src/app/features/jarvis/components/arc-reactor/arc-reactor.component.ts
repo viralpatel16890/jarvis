@@ -1,6 +1,6 @@
 import {
   Component, Input, OnChanges, OnDestroy, OnInit,
-  ElementRef, ViewChild, SimpleChanges, NgZone
+  ElementRef, ViewChild, SimpleChanges, NgZone, ChangeDetectionStrategy
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { JarvisState } from '../../../../core/models/message.model';
@@ -11,6 +11,7 @@ import { JarvisState } from '../../../../core/models/message.model';
   imports: [CommonModule],
   templateUrl: './arc-reactor.component.html',
   styleUrls: ['./arc-reactor.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ArcReactorComponent implements OnInit, OnChanges, OnDestroy {
   @Input() state: JarvisState = 'idle';

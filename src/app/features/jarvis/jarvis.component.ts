@@ -1,6 +1,6 @@
 import {
   Component, OnInit, OnDestroy, signal, computed, effect, untracked,
-  NgZone, ViewChild, ElementRef
+  NgZone, ViewChild, ElementRef, ChangeDetectionStrategy
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
@@ -33,6 +33,7 @@ function uuid(): string {
   imports: [CommonModule, FormsModule, ArcReactorComponent, MessageListComponent, SettingsPanelComponent],
   templateUrl: './jarvis.component.html',
   styleUrls: ['./jarvis.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class JarvisComponent implements OnInit, OnDestroy {
   @ViewChild('inputRef') inputRef!: ElementRef<HTMLTextAreaElement>;

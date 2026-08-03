@@ -15,7 +15,7 @@ const express = require('express');
 const cors    = require('cors');
 const fs      = require('fs');
 const path    = require('path');
-const { execSync, spawn } = require('child_process');
+const { execSync, spawn, spawnSync } = require('child_process');
 const axios   = require('axios');
 const cheerio = require('cheerio');
 
@@ -104,6 +104,9 @@ app.post('/chat', (req, res) => {
   res.setHeader('Connection', 'keep-alive');
 
   const chosenModel = model || DEFAULT_MODEL;
+  if (!/^[\w:.\-]+$/.test(chosenModel)) {
+    return res.status(400).json({ error: 'Invalid model format' });
+  }
 
   const proc = spawn(
     path,
@@ -230,11 +233,11 @@ app.get('/files/read', (req, res) => {
 app.post('/files/search', (req, res) => {
   const { query } = req.body;
   if (!query) return res.status(400).json({ error: 'query required' });
-  try {
-    const out = execSync(`grep -rli "${query}" .. --exclude-dir={node_modules,.git,.angular,dist}`, { encoding: 'utf8' });
-    const files = out.split('\n').filter(f => f.trim()).map(f => path.relative(path.resolve(__dirname, '..'), path.resolve(__dirname, f)));
-    res.json({ files });
-  } catch (err) { res.json({ files: [] }); }
+  const result = spawnSync('grep', ['-rli', query, '..', '--exclude-dir=node_modules', '--exclude-dir=.git', '--exclude-dir=.angular', '--exclude-dir=dist'], { encoding: 'utf8', cwd: __dirname });
+  if (result.error) return res.json({ files: [] });
+  const out = result.stdout || '';
+  const files = out.split('\n').filter(f => f.trim()).map(f => path.relative(path.resolve(__dirname, '..'), path.resolve(__dirname, f)));
+  res.json({ files });
 });
 
 // ── Start ─────────────────────────────────────────────────────────────────────

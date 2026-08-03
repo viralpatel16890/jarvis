@@ -17,12 +17,14 @@
 'use strict';
 
 const express = require('express');
+const compression = require('compression');
 const https   = require('https');
 const http    = require('http');
 const path    = require('path');
 const fs      = require('fs');
 
 const app  = express();
+app.use(compression());
 const PORT = process.env.PORT || 3000;
 
 // ── Locate Angular build ──────────────────────────────────────
@@ -54,9 +56,12 @@ function makeProxy(targetBase) {
     // req.url already has the prefix stripped by Express router
     const proxyPath = (targetUrl.pathname.replace(/\/$/, '')) + req.url;
 
-    // Forward all headers except host; keep Authorization / x-api-key
-    const headers = { ...req.headers, host: targetUrl.hostname };
-    delete headers['content-length']; // let node recalculate
+    // Forward only allowlisted headers
+    const allowedHeaders = ['content-type', 'x-api-key', 'anthropic-version', 'anthropic-beta', 'accept'];
+    const headers = { host: targetUrl.hostname };
+    for (const h of allowedHeaders) {
+      if (req.headers[h] !== undefined) headers[h] = req.headers[h];
+    }
 
     const options = {
       hostname: targetUrl.hostname,
@@ -69,6 +74,10 @@ function makeProxy(targetBase) {
     const proxyReq = lib.request(options, proxyRes => {
       res.writeHead(proxyRes.statusCode || 200, proxyRes.headers);
       proxyRes.pipe(res, { end: true });
+    });
+
+    proxyReq.setTimeout(30000, () => {
+      proxyReq.destroy(new Error('Upstream request timed out'));
     });
 
     proxyReq.on('error', err => {
@@ -123,7 +132,7 @@ app.post('/hermes/chat', (_req, res) => {
 });
 
 // ── Angular SPA ───────────────────────────────────────────────
-app.use(express.static(DIST_DIR));
+app.use(express.static(DIST_DIR, { maxAge: '1y', index: false }));
 
 // Express 5 requires named wildcard params — use (.*) for catch-all SPA fallback
 app.get('/{*path}', (_req, res) => {

@@ -33,28 +33,72 @@ export class ClaudeService {
       .filter(m => m.role !== 'system')
       .map(m => ({ role: m.role as 'user' | 'assistant', content: m.content }));
 
-    const response = await fetch('/anthropic/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': s.claudeApiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
-      },
-      body: JSON.stringify({
-        model: s.claudeModel,
-        max_tokens: 1024,
-        system: systemPrompt,
-        messages: claudeMessages,
-        stream: true,
-      }),
-      signal,
-    });
+    let lastError: Error | null = null;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const controller = new AbortController();
+      let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
-    if (!response.ok) {
-      const err = await response.text();
-      throw new Error(`Claude API error: ${response.status} - ${err}`);
+      // If user provided signal, listen for abort
+      if (signal) {
+        signal.addEventListener('abort', () => controller.abort());
+      }
+
+      timeoutId = setTimeout(() => controller.abort(), 30000);
+
+      try {
+        const response = await fetch('/anthropic/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': s.claudeApiKey,
+            'anthropic-version': '2023-06-01',
+            'anthropic-dangerous-direct-browser-access': 'true',
+          },
+          body: JSON.stringify({
+            model: s.claudeModel,
+            max_tokens: 1024,
+            system: systemPrompt,
+            messages: claudeMessages,
+            stream: true,
+          }),
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          const err = await response.text();
+          const error = new Error(`Claude API error: ${response.status} - ${err}`);
+          // Retry on 5xx errors
+          if (response.status >= 500 && attempt < 1) {
+            lastError = error;
+            await new Promise(r => setTimeout(r, 500)); // Wait before retry
+            continue;
+          }
+          throw error;
+        }
+
+        return yield* this.processResponse(response, s);
+      } catch (err) {
+        lastError = err as Error;
+        // Retry on network errors
+        if (attempt < 1 && (err as Error).message.includes('fetch')) {
+          await new Promise(r => setTimeout(r, 500)); // Wait before retry
+          continue;
+        }
+        throw err;
+      } finally {
+        if (timeoutId) clearTimeout(timeoutId);
+      }
     }
+
+    if (lastError) throw lastError;
+  }
+
+  private async *processResponse(
+    response: Response,
+    s: ReturnType<typeof this.settings.get>
+  ): AsyncGenerator<string> {
 
     if (!response.body) throw new Error('No response body');
 
