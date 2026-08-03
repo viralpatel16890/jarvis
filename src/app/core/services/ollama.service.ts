@@ -99,7 +99,7 @@ export class OllamaService {
     }
 
     if (!response.ok) { this.recordFailure(); throw new Error(`Ollama error: ${response.status}`); }
-    if (!response.body) throw new Error('No response body');
+    if (!response.body) throw new Error('Ollama error: No response body');
 
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
@@ -157,7 +157,13 @@ export class OllamaService {
     }
 
     if (!response.ok) { this.recordFailure(); throw new Error(`Ollama error: ${response.status}`); }
-    const data: OllamaChatResponse = await response.json();
+    let data: OllamaChatResponse;
+    try {
+      data = await response.json();
+    } catch {
+      this.recordFailure();
+      throw new Error('Ollama error: Failed to parse response');
+    }
 
     const promptTok = data.prompt_eval_count ?? 0;
     const completionTok = data.eval_count ?? 0;

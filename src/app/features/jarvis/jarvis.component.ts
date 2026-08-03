@@ -344,10 +344,27 @@ export class JarvisComponent implements OnInit, OnDestroy {
 
   private handleError(err: Error, msgId?: string): void {
     const raw = err.message ?? 'Unknown error';
-    const isDown = raw.includes('500') || raw.includes('fetch') || raw.includes('Failed');
-    const content = isDown
-      ? `Ollama is offline or the model is unavailable.\n\n**To fix:**\n1. \`OLLAMA_ORIGINS=* ollama serve\`\n2. Check ⚙ CONFIG for the selected model`
-      : raw;
+
+    let content: string;
+
+    if (raw.startsWith('Claude API error:')) {
+      // Classify Claude-specific errors
+      if (raw.includes('401')) {
+        content = 'Invalid Claude API key. Check your key in ⚙ CONFIG.';
+      } else if (raw.includes('429')) {
+        content = 'Claude API rate limit exceeded. Please try again in a moment.';
+      } else if (raw.includes('500') || raw.includes('502') || raw.includes('503') || raw.includes('504')) {
+        content = 'Claude API is temporarily unavailable. Please try again shortly.';
+      } else {
+        content = `Claude error: ${raw.replace('Claude API error: ', '')}`;
+      }
+    } else if (raw.startsWith('Ollama error:') || raw.startsWith('OllamaCircuitOpen')) {
+      // Ollama offline or circuit breaker triggered
+      content = `Ollama is offline or the model is unavailable.\n\n**To fix:**\n1. \`OLLAMA_ORIGINS=* ollama serve\`\n2. Check ⚙ CONFIG for the selected model`;
+    } else {
+      // Generic fallback for unrecognized errors
+      content = raw;
+    }
 
     if (msgId) {
       this.zone.run(() => this.updateMsg(msgId, { status: 'error', content: `⚠ ${content}` }));

@@ -22,6 +22,21 @@ const cheerio = require('cheerio');
 const app  = express();
 const PORT = 3001;
 
+// ── Security: SSRF validation for /scrape ─────────────────────────────────────
+
+function isSafeScrapeUrl(rawUrl) {
+  let parsed;
+  try { parsed = new URL(rawUrl); } catch { return false; }
+  if (!['http:', 'https:'].includes(parsed.protocol)) return false;
+  // parsed.hostname wraps IPv6 literals in brackets (e.g. "[::1]") — strip them for comparison
+  const host = parsed.hostname.toLowerCase().replace(/^\[|\]$/g, '');
+  if (['localhost', '127.0.0.1', '::1', '0.0.0.0'].includes(host)) return false;
+  if (/^10\./.test(host) || /^192\.168\./.test(host) || /^169\.254\./.test(host) || /^172\.(1[6-9]|2\d|3[01])\./.test(host)) return false;
+  if (/^fe80:/.test(host) || /^f[cd][0-9a-f]{2}:/.test(host)) return false; // IPv6 link-local / unique-local
+  if (host.endsWith('.internal')) return false;
+  return true;
+}
+
 // Ollama OpenAI-compatible endpoint
 const OLLAMA_BASE_URL  = process.env.OLLAMA_BASE_URL  || 'http://127.0.0.1:11434/v1';
 const OLLAMA_API_KEY   = process.env.OLLAMA_API_KEY   || 'ollama';
@@ -178,6 +193,7 @@ app.post('/chat', (req, res) => {
 app.post('/scrape', async (req, res) => {
   const { url } = req.body;
   if (!url) return res.status(400).json({ error: 'url required' });
+  if (!isSafeScrapeUrl(url)) return res.status(400).json({ error: 'URL not allowed' });
   try {
     const response = await axios.get(url, {
       timeout: 10000,
@@ -222,8 +238,13 @@ app.get('/files/read', (req, res) => {
   if (!rel) return res.status(400).json({ error: 'path required' });
   try {
     const full = path.resolve(__dirname, '..', rel);
-    if (!full.startsWith(path.resolve(__dirname, '..'))) return res.status(403).json({ error: 'Access denied' });
-    res.json({ content: fs.readFileSync(full, 'utf8') });
+    const projectRoot = path.resolve(__dirname, '..');
+    if (!full.startsWith(projectRoot)) return res.status(403).json({ error: 'Access denied' });
+    let realFull;
+    try { realFull = fs.realpathSync(full); } catch (e) { return res.status(404).json({ error: 'File not found' }); }
+    const realRoot = fs.realpathSync(projectRoot);
+    if (!realFull.startsWith(realRoot)) return res.status(403).json({ error: 'Access denied' });
+    res.json({ content: fs.readFileSync(realFull, 'utf8') });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 

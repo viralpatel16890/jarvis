@@ -98,6 +98,16 @@ app.use('/anthropic', (req, _res, next) => {
   next();
 }, makeProxy('https://api.anthropic.com'));
 
+// ── Env validation ───────────────────────────────────────────
+if (process.env.PORT && (!Number.isInteger(Number(process.env.PORT)) || Number(process.env.PORT) <= 0)) {
+  console.error('[JARVIS] Invalid PORT env var:', process.env.PORT);
+  process.exit(1);
+}
+if (process.env.OLLAMA_URL) {
+  try { new URL(process.env.OLLAMA_URL); }
+  catch { console.error('[JARVIS] Invalid OLLAMA_URL env var:', process.env.OLLAMA_URL); process.exit(1); }
+}
+
 // ── Ollama proxy (/ollama/*) ─────────────────────────────────
 const OLLAMA_URL = process.env.OLLAMA_URL || '';
 if (OLLAMA_URL) {
@@ -140,9 +150,22 @@ app.get('/{*path}', (_req, res) => {
 });
 
 // ── Start ─────────────────────────────────────────────────────
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`[JARVIS] Online → http://localhost:${PORT}`);
   console.log(`[JARVIS] Dist   → ${DIST_DIR}`);
   console.log(`[JARVIS] Ollama → ${OLLAMA_URL || '⚠  not configured (set OLLAMA_URL)'}`);
   console.log(`[JARVIS] Claude → proxied via /anthropic`);
 });
+
+// ── Graceful shutdown ─────────────────────────────────────────
+function shutdown(signal) {
+  console.log(`[JARVIS] ${signal} received, shutting down gracefully...`);
+  server.close(() => {
+    console.log('[JARVIS] Server closed.');
+    process.exit(0);
+  });
+  // Force exit if connections don't close within 10s
+  setTimeout(() => process.exit(1), 10000).unref();
+}
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));

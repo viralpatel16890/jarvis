@@ -100,7 +100,7 @@ export class ClaudeService {
     s: ReturnType<typeof this.settings.get>
   ): AsyncGenerator<string> {
 
-    if (!response.body) throw new Error('No response body');
+    if (!response.body) throw new Error('Claude API error: No response body');
 
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
