@@ -19,10 +19,10 @@
     </div>
     <div class="top-bar__actions">
       @if (isSpeaking()) {
-        <button type="button" class="btn-action" (click)="stopSpeaking()">⏹ MUTE</button>
+        <button type="button" class="btn-action" (click)="stopSpeaking()" aria-label="Stop speaking">⏹ MUTE</button>
       }
-      <button type="button" class="btn-action" (click)="exportChat()" [disabled]="messages().length === 0">⬇ EXPORT</button>
-      <button type="button" class="btn-action" (click)="clearChat()">⊘ CLEAR</button>
+      <button type="button" class="btn-action" (click)="exportChat()" [disabled]="messages().length === 0" aria-label="Export conversation">⬇ EXPORT</button>
+      <button type="button" class="btn-action" (click)="clearChat()" aria-label="Clear conversation">⊘ CLEAR</button>
     </div>
   </header>
 

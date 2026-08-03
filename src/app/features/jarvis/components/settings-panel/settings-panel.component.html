@@ -4,9 +4,13 @@
 <div class="panel" [class.panel--docked]="isDocked">
   <div class="panel__header">
     <span class="panel__title">SYSTEM CONFIGURATION</span>
-    @if (!isDocked) {
-      <button type="button" class="btn-icon" (click)="close()">✕</button>
-    }
+    <!--
+      Always rendered: on desktop the docked sidebar hides this via CSS
+      (.panel--docked .btn-icon-close), but below 1024px jarvis.component.scss
+      forces the docked panel into a full-screen overlay, and this is its
+      only dismiss affordance there — see the matching @media rule below.
+    -->
+    <button type="button" class="btn-icon btn-icon-close" aria-label="Close settings" (click)="close()">✕</button>
   </div>
 
   <div class="panel__body">
@@ -16,7 +20,7 @@
       <div class="status-row">
         <span [class]="'dot dot--' + ollamaStatus"></span>
         <span class="status-text">{{ ollamaStatus | uppercase }}</span>
-        <button type="button" class="btn-sm" (click)="checkOllama()">REFRESH</button>
+        <button type="button" class="btn-sm" aria-label="Refresh model list" (click)="checkOllama()">REFRESH</button>
       </div>
       @if (ollamaStatus === 'offline') {
         <div class="hint">Start Ollama: <code>OLLAMA_ORIGINS=* ollama serve</code></div>
@@ -110,7 +114,7 @@
         <span class="status-text">Bridge: {{ hermesBridgeStatus | uppercase }}</span>
         <span [class]="'dot dot--small ' + (hermesCliStatus === 'installed' ? 'dot--online' : 'dot--offline')"></span>
         <span class="status-text">CLI: {{ hermesCliStatus | uppercase }}</span>
-        <button type="button" class="btn-sm" (click)="checkHermes()">REFRESH</button>
+        <button type="button" class="btn-sm" aria-label="Refresh Hermes status" (click)="checkHermes()">REFRESH</button>
       </div>
       @if (hermesCliStatus !== 'installed') {
         <div class="hint">

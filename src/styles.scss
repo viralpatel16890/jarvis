@@ -4,6 +4,23 @@
   padding: 0;
 }
 
+:root {
+  // Button/interactive-element radius scale — use these instead of ad-hoc
+  // px values so the button vocabulary stays consistent across components.
+  // (Message-bubble corner radii are a deliberate speech-bubble shape and
+  // are intentionally NOT part of this scale.)
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --transition-fast: 0.15s ease;
+
+  // Minimum-contrast text tokens: the theme's cyan/light-blue need at least
+  // this opacity against the #020a14 background to clear WCAG AA (4.5:1)
+  // for body-size text. Verified via sRGB relative-luminance contrast calc.
+  --text-cyan-dim: rgba(0, 212, 255, 0.65);   // was as low as 0.35 in places
+  --text-hint-dim: rgba(200, 232, 255, 0.65); // was as low as 0.4 in places
+}
+
 html, body {
   width: 100%;
   height: 100%;

@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output, ChangeDetectionStrategy, ChangeDetectorRef, inject } from '@angular/core';
+import { Component, EventEmitter, HostListener, Input, OnInit, Output, ChangeDetectionStrategy, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SettingsService } from '../../../../core/services/settings.service';
@@ -85,4 +85,20 @@ export class SettingsPanelComponent implements OnInit {
   }
 
   close(): void { this.closed.emit(); }
+
+  // Bound to `document`, not the host element: focus normally stays on the
+  // main chat input while this panel is open as an overlay, so a keydown
+  // never bubbles through the panel's own DOM subtree — it must be caught
+  // globally to work in the actual usage pattern.
+  @HostListener('document:keydown.escape')
+  onEscapeKey(): void {
+    // Mirrors the same 1024px breakpoint jarvis.component.scss uses to force
+    // a docked panel into a full-screen overlay — that's the only case where
+    // a docked panel is actually dismissible via Escape (or its close button).
+    const isDockedButOverlaid = this.isDocked && typeof window !== 'undefined'
+      && window.matchMedia('(max-width: 1024px)').matches;
+    if (!this.isDocked || isDockedButOverlaid) {
+      this.close();
+    }
+  }
 }

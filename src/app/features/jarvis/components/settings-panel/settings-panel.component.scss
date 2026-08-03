@@ -138,7 +138,7 @@
 .toggle-group {
   display: flex;
   border: 1px solid rgba(0, 212, 255, 0.3);
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   overflow: hidden;
 }
 
@@ -168,7 +168,7 @@
   width: 100%;
   background: rgba(0, 0, 0, 0.4);
   border: 1px solid rgba(0, 212, 255, 0.25);
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   padding: 8px 12px;
   color: #c8e8ff;
   font-family: 'Courier New', monospace;
@@ -194,13 +194,13 @@
 
 .hint {
   font-size: 11px;
-  color: rgba(200, 232, 255, 0.4);
+  color: var(--text-hint-dim);
   font-family: 'Courier New', monospace;
 
   code {
     background: rgba(0, 212, 255, 0.1);
     padding: 2px 6px;
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
     color: #00d4ff;
     font-size: 10px;
   }
@@ -209,7 +209,7 @@
 .btn-icon {
   background: none;
   border: 1px solid rgba(0, 212, 255, 0.3);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   color: rgba(0, 212, 255, 0.6);
   width: 28px;
   height: 28px;
@@ -220,10 +220,21 @@
   &:active { transform: scale(0.95); opacity: 0.8; }
 }
 
+// Desktop docked sidebar has no dismiss affordance by design (it's a
+// permanent panel toggled from the header). But jarvis.component.scss
+// forces docked panels into a full-screen overlay below 1024px, so this
+// close button must reappear there — same breakpoint, kept in sync.
+.panel--docked .btn-icon-close {
+  display: none;
+  @media (max-width: 1024px) {
+    display: inline-block;
+  }
+}
+
 .btn-sm {
   background: rgba(0, 212, 255, 0.1);
   border: 1px solid rgba(0, 212, 255, 0.3);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   color: #00d4ff;
   padding: 4px 10px;
   cursor: pointer;
@@ -239,7 +250,7 @@
   padding: 12px;
   background: rgba(0, 212, 255, 0.15);
   border: 1px solid rgba(0, 212, 255, 0.4);
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   color: #00d4ff;
   font-family: 'Courier New', monospace;
   font-size: 12px;
@@ -254,7 +265,7 @@
   padding: 8px 16px;
   background: rgba(255, 64, 64, 0.1);
   border: 1px solid rgba(255, 64, 64, 0.3);
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   color: #ff6060;
   font-family: 'Courier New', monospace;
   font-size: 10px;
