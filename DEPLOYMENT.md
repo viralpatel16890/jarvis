@@ -1,34 +1,28 @@
 # Deployment Guide
 
-JARVIS ships with two deployment paths that share the same frontend contract:
-the Angular app always calls **relative** URLs (`/anthropic/*`, `/ollama/*`),
-so whatever serves the SPA must also proxy those routes.
+JARVIS runs as a **split deployment**: Vercel serves the static Angular SPA,
+and Render runs the long-lived Express backend (`server.js`) that proxies
+`/anthropic/*`, `/ollama/*`, `/openai/*`, and `/hermes/*`. The Angular app
+always calls relative URLs, so Vercel rewrites those paths straight through
+to the Render service — from the browser's perspective it's all same-origin.
 
-| | Vercel (current production) | Render |
-|---|---|---|
-| Model | Static SPA + Edge Functions | Long-running Express server (`server.js`) |
-| Config | `vercel.json` + `api/*.js` | `render.yaml` |
-| Streaming | SSE via Edge runtime | SSE via Node proxy, no duration limits |
-| Free tier | Always-on CDN | Spins down after ~15 min idle (cold start ≈ 30–60 s) |
-| CI/CD | Auto-deploy from `main` (already wired) | Auto-deploy from `main` once Blueprint is created |
+Render is the single source of truth for backend/proxy logic. There is no
+separate Vercel Edge Function implementation to keep in sync.
 
-## Vercel (primary)
+## Vercel (frontend)
 
-Already live at <https://jarvis-one-pearl.vercel.app>. Pushes to `main`
-auto-deploy. Configuration lives in:
+Live at <https://jarvis-one-pearl.vercel.app>. Pushes to `main` auto-deploy.
+Configuration lives in `vercel.json`:
 
-- `vercel.json` — build command, output dir (`dist/jarvis/browser`), rewrites
-- `api/anthropic.js` — Edge proxy to `api.anthropic.com` (falls back to `ANTHROPIC_KEY` env var)
-- `api/ollama.js` — Edge proxy to `OLLAMA_URL` env var
+- `buildCommand` / `outputDirectory` — builds and serves the Angular SPA
+- `rewrites` — forwards `/anthropic/*`, `/ollama/*`, `/openai/*`, `/hermes/*`
+  to the Render service (`https://jarvis-oeob.onrender.com`); everything
+  else falls through to `index.html`
 
-Environment variables (Vercel → Settings → Environment Variables):
+No environment variables or serverless functions needed on Vercel — it's a
+pure static host plus a reverse proxy in front of Render.
 
-| Variable | Purpose |
-|---|---|
-| `ANTHROPIC_KEY` | Server-side Claude key (optional — users can enter one in the CONFIG panel) |
-| `OLLAMA_URL` | HTTPS URL of a cloud Ollama instance (optional) |
-
-## Render
+## Render (backend)
 
 1. Render dashboard → **New → Blueprint** → select this repo. The
    `render.yaml` at the repo root provisions a Node web service that builds
@@ -38,7 +32,12 @@ Environment variables (Vercel → Settings → Environment Variables):
 3. Health checks hit `/hermes/health`.
 
 `server.js` injects `ANTHROPIC_KEY` into `/anthropic/*` requests when the
-client didn't supply a key, matching the Vercel Edge Function behavior.
+client didn't supply a key. `/openai/*` is proxied to an allow-listed set of
+providers (Groq, Gemini, OpenRouter, OpenAI) selected via the `x-provider`
+header — never a client-supplied URL — so it can't become an open proxy.
+
+If the Render URL ever changes, update the four `destination` values in
+`vercel.json` to match.
 
 ## Notes for both platforms
 

@@ -2,8 +2,10 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist/jarvis/browser",
   "rewrites": [
-    { "source": "/anthropic/:path*", "destination": "/api/anthropic" },
-    { "source": "/ollama/:path*",    "destination": "/api/ollama" },
-    { "source": "/((?!api/).*)",     "destination": "/index.html" }
+    { "source": "/anthropic/:path*", "destination": "https://jarvis-oeob.onrender.com/anthropic/:path*" },
+    { "source": "/ollama/:path*",    "destination": "https://jarvis-oeob.onrender.com/ollama/:path*" },
+    { "source": "/openai/:path*",    "destination": "https://jarvis-oeob.onrender.com/openai/:path*" },
+    { "source": "/hermes/:path*",    "destination": "https://jarvis-oeob.onrender.com/hermes/:path*" },
+    { "source": "/(.*)",             "destination": "/index.html" }
   ]
 }
